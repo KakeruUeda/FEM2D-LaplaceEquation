@@ -153,7 +153,17 @@ int main()
     
     ofs.close();
     export_vtu("test.vtu", x, element, C);
+    
 
+    ifs.open("boundary.dat");
+    vector<int> boundary;
+    while(getline(ifs,str)){
+        istringstream ss(str);
+        string tmp;
+        getline(ss, tmp, ' ');
+        boundary.push_back(stoi(tmp));
+    }
+    ifs.close();
 
     Matrix3_2d dNds;
     Matrix3_2d dNdx;
@@ -162,8 +172,10 @@ int main()
     Matrix2_3d x_current;
     Matrix3_3d Ke;
     MatrixXd K(1301,1301);
+    
 
     double detJ;
+    //double boundary_id[boundary.size()] 
 
     dNds << -1, -1,
              1, 0,
@@ -261,12 +273,24 @@ int main()
         }
       }
     }
+    
+    //neuman boundary condition
+    for(int i=0; i<boundary.size(); i++){
+      for(int j=0; j<numOfNode; j++){
+        K(boundary[i],j) = 0;
+      }
+      K(boundary[i],boundary[i]) = 1;
+    }
     //cout << K << endl;
 
-    ofstream outputfile("K.txt");
+    /*ofstream outputfile("K.txt");
     outputfile<< K ;
-    outputfile.close();
+    outputfile.close();*/
 
-    return 0;
+   
+    /*  for(int i=0; i<26; i++){
+        cout << boundary[i] << endl;
+      }*/
+  return 0;
 }
 
