@@ -136,34 +136,66 @@ int main()
         element.push_back(tmp_element);
     }
     ifs.close();
-    vector<double> C(x.size(),0.0);
+
+
+    vector<double> C1(x.size(),0.0);
     double minimum = 100000.0;
     for(int i=0; i<x.size(); i++){
         minimum=min(minimum,x[i][0]);
     }
 
-    ofstream ofs("boundary.dat");
+    ofstream ofs1("boundary_left.dat");
     for(int i=0; i<x.size(); i++){
         if(fabs(x[i][0]-minimum)<0.000001){
 
-            ofs << i << endl;
-            C[i] = 1.0;
+            ofs1 << i << endl;
+            C1[i] = 1.0;
         }
     }
+    ofs1.close();
+
     
-    ofs.close();
-    export_vtu("test.vtu", x, element, C);
+    vector<double> C2(x.size(),0.0);
+    double maximum = 0.01;
+    for(int i=0; i<x.size(); i++){
+        maximum=max(maximum,x[i][0]);
+    }
+
+    ofstream ofs2("boundary_right.dat");
+    for(int i=0; i<x.size(); i++){
+        if(fabs(x[i][0]-maximum)<0.000001){
+
+            ofs2 << i << endl;
+            C2[i] = 1.0;
+        }
+    }
+
+    ofs2.close();
+
+
+    export_vtu("test.vtu", x, element, C1);
     
 
-    ifs.open("boundary.dat");
-    vector<int> boundary;
+    ifs.open("boundary_left.dat");
+    vector<int> boundary_left;
     while(getline(ifs,str)){
         istringstream ss(str);
         string tmp;
         getline(ss, tmp, ' ');
-        boundary.push_back(stoi(tmp));
+        boundary_left.push_back(stoi(tmp));
     }
     ifs.close();
+
+    ifs.open("boundary_right.dat");
+    vector<int> boundary_right;
+    while(getline(ifs,str)){
+        istringstream ss(str);
+        string tmp;
+        getline(ss, tmp, ' ');
+        boundary_right.push_back(stoi(tmp));
+    }
+    ifs.close();
+
 
     Matrix3_2d dNds;
     Matrix3_2d dNdx;
@@ -172,6 +204,10 @@ int main()
     Matrix2_3d x_current;
     Matrix3_3d Ke;
     MatrixXd K(1301,1301);
+    VectorXd U(1301);
+    VectorXd R(1301);
+    U = VectorXd::Zero(1301);
+    R = VectorXd::Zero(1301);
     
 
     double detJ;
@@ -272,25 +308,53 @@ int main()
           K(element[ic][p],element[ic][q]) += Ke(p,q);
         }
       }
+      /*ofstream outputfile("K.txt");
+      outputfile<< K ;
+      outputfile.close();
+      exit(1);*/
     }
-    
-    //neuman boundary condition
-    for(int i=0; i<boundary.size(); i++){
-      for(int j=0; j<numOfNode; j++){
-        K(boundary[i],j) = 0;
-      }
-      K(boundary[i],boundary[i]) = 1;
-    }
-    //cout << K << endl;
 
     /*ofstream outputfile("K.txt");
     outputfile<< K ;
     outputfile.close();*/
+    
+    //neuman boundary condition
+    for(int i=0; i<boundary_left.size(); i++){
+      for(int j=0; j<numOfNode; j++){
+        K(boundary_left[i],j) = 0;
+      }
+      K(boundary_left[i],boundary_left[i]) = 1;
+      R(boundary_left[i]) = 100;
+    }
+
+    for(int i=0; i<boundary_right.size(); i++){
+      for(int j=0; j<numOfNode; j++){
+        K(boundary_right[i],j) = 0;
+      }
+      K(boundary_right[i],boundary_right[i]) = 1;
+      R(boundary_right[i]) = 2;
+    }
+
+      FullPivLU<MatrixXd> lu(K);
+      U = lu.solve(R);
+      ofstream outputfile("U.txt");
+      outputfile << U;
+      outputfile.close();
+
+      vector<double> p(x.size());
+      for(int i=0; i<x.size(); i++){
+        p[i]=U(i);
+      }
+    
 
    
-    /*  for(int i=0; i<26; i++){
-        cout << boundary[i] << endl;
-      }*/
+       for(int i=0; i<26; i++){
+        cout << boundary_right[i] << endl;
+      }
+      for(int i=0; i<26; i++){
+        cout << boundary_left[i] << endl;
+      }
+      export_vtu("result.vtu",x,element,p);
   return 0;
 }
 
