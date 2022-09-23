@@ -8,7 +8,6 @@
 #include "Eigen/Core"
 #include "Eigen/LU"
 
-#define numOfNode 1300
 #define numOfNodeInElm 3
 #define weight 1
 
@@ -211,20 +210,16 @@ int main()
     
 
     double detJ;
-    //double boundary_id[boundary.size()] 
 
     dNds << -1, -1,
              1, 0,
              0, 1;
     
-    for(int i=0; i<numOfNode; i++){
-      for(int j=0; j<numOfNode; j++){
+    for(int i=0; i<x.size(); i++){
+      for(int j=0; j<x.size(); j++){
         K(i,j) = 0;
       }
     }
-    
-    //cout << dNds(1,0) << endl;
-    
 
     for(int ic=0; ic<element.size(); ic++){
 
@@ -234,23 +229,6 @@ int main()
           x_current(j,i) = x[element[ic][i]][j];
         }
       }
-    
-   
-      //cout << x_current(0,0) << endl;
-
-        /*for(int i=0; i<numOfNodeInElm; i++){
-        for(int j=0; j<2; j++){
-          cout << x_current(j,i);
-        }
-        cout << endl;
-      }*/
-
-      /*for(int i=0; i<2; i++){
-        for(int j=0; j<numOfNodeInElm; j++){
-          cout << x_current(i,j);
-        }
-        cout << endl;
-      }*/
 
       //initialize
       for(int i=0; i<2; i++){
@@ -267,18 +245,12 @@ int main()
             dxds(p,i) += dNds(j,i)*x_current(p,j);
           }
         }
-      }
+      }     
 
-      //cout << dxds <<endl;
-      
-
-      detJ = dxds.determinant();
-      //cout << detJ << endl;
-      //cout << dxds << endl; 
+      detJ = dxds.determinant(); 
 
       dsdx = dxds.inverse();
-      
-      //cout << dsdx << endl;
+
       for(int p=0; p<3; p++){
         for(int i=0; i<2; i++){
           dNdx(p,i) = 0;
@@ -287,10 +259,6 @@ int main()
           }
         }
       }
-
-      //dNdx = 
-
-      //cout << dNdx << endl;
 
       for(int p=0; p<numOfNodeInElm; p++){
         for(int q=0; q<numOfNodeInElm; q++){
@@ -301,8 +269,6 @@ int main()
         }
       }
   
-      //cout << Ke << endl;
-      //cout << K << endl;
       for(int p=0; p<numOfNodeInElm; p++){
         for(int q=0; q<numOfNodeInElm; q++){
           K(element[ic][p],element[ic][q]) += Ke(p,q);
@@ -320,7 +286,7 @@ int main()
     
     //neuman boundary condition
     for(int i=0; i<boundary_left.size(); i++){
-      for(int j=0; j<numOfNode; j++){
+      for(int j=0; j<x.size(); j++){
         K(boundary_left[i],j) = 0;
       }
       K(boundary_left[i],boundary_left[i]) = 1;
@@ -328,7 +294,7 @@ int main()
     }
 
     for(int i=0; i<boundary_right.size(); i++){
-      for(int j=0; j<numOfNode; j++){
+      for(int j=0; j<x.size(); j++){
         K(boundary_right[i],j) = 0;
       }
       K(boundary_right[i],boundary_right[i]) = 1;
@@ -346,15 +312,8 @@ int main()
         p[i]=U(i);
       }
     
-
-   
-       for(int i=0; i<26; i++){
-        cout << boundary_right[i] << endl;
-      }
-      for(int i=0; i<26; i++){
-        cout << boundary_left[i] << endl;
-      }
       export_vtu("result.vtu",x,element,p);
+      
   return 0;
 }
 
